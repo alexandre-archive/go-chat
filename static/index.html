@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Go Chat</title>
+
+    <style type="text/css">
+        body, html {
+            margin: 10px;
+            padding: 0;
+            width: calc(100% - 20px);
+            height: calc(100% - 20px);
+        }
+
+        #chat {
+            width: 100%;
+            height: 90%;
+            border: 1px rgb(169, 169, 169) solid;
+            margin-bottom: 4px;
+            padding: 2px;
+        }
+
+        #nickname {
+            width: 15%;
+        }
+
+        #message {
+            width: 30%;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="chat"></div>
+
+    <input type="text" id="nickname" placeholder="Nickname">
+    <input type="button" id="enter" value="Enter">
+    <input type="button" id="exit" value="Exit">
+
+    <input type="text" id="message" placeholder="Message">
+    <input type="button" id="send" value="Send">
+
+    <script src="/jquery-3.1.1.min.js"></script>
+
+    <script type="text/javascript">
+        $("#exit").hide();
+        $("#message").hide();
+        $("#send").hide();
+
+        var ws;
+
+
+        $("#enter").click(function () {
+            nickname = $("#nickname").val();
+
+            if (!nickname) {
+                alert("You must pick a nickname!")
+                return
+            }
+
+            if (nickname.length < 3) {
+                alert("Your nickname is too short!")
+                return
+            }
+
+            console.log("Your nickname is: " + nickname);
+
+            ws = new WebSocket("ws://localhost:8000/ws?nickname=" + nickname);
+
+            ws.onopen = function () {
+                console.log("WS connected.");
+
+                $("#nickname").hide();
+                $("#enter").hide();
+
+                $("#exit").show();
+                $("#message").show();
+                $("#send").show();
+            }
+
+            ws.onerror = function (err) {
+                console.log("WS connection error: " + err);
+            }
+
+            ws.onmessage = function (e) {
+                msg = JSON.parse(e.data);
+                $("#chat").append("<strong>&lt;" + msg.nickname + "&gt;</strong> " + msg.message + "<br>")
+            }
+        });
+
+        $("#exit").click(function () {
+            if (ws) {
+                ws.close();
+                ws = undefined;
+            }
+
+            $("#nickname").show();
+            $("#enter").show();
+
+            $("#exit").hide();
+            $("#message").hide();
+            $("#send").hide();
+        });
+
+        $("#send").click(function () {
+            var msg = $("#message").val();
+            var nickname = $("#nickname").val();
+
+            if (msg) {
+                ws.send(JSON.stringify({ nickname: nickname, message: msg}));
+                $("#message").val("");
+            }
+        });
+    </script>
+</body>
+</html>
